@@ -1,0 +1,24 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY scripts/setup-typescript-sdk.sh ./
+
+# Make setup script executable
+RUN chmod +x setup-typescript-sdk.sh
+
+# Run setup
+RUN ./setup-typescript-sdk.sh
+
+# Copy source code
+COPY . .
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Expose port
+EXPOSE 3000
+
+CMD ["npm", "start"]

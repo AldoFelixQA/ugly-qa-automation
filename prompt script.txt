@@ -1,0 +1,35 @@
+The manual-test folder contains the file test_trigger_order.py when this file runs the output is a orderID that i can use to run my automation 
+in the forlder playwright-framework-test I need to run this script and use the orderID to start my automation test. the requisites tu run this script are
+🚀 Running the Tests
+✅ Prerequisites
+poetry
+
+These tests use Poetry for dependency management. If you don’t have it installed, run the following command (only once):
+
+pip install poetry
+GCP Permissions
+
+The tests call the overseer service in the sandbox environment, so you need appropriate permissions:
+
+🔹 Overseer Sandbox Service Account Run the following command to generate temporary credentials:
+
+gcloud iam service-accounts keys create $HOME/.config/gcloud/overseer-sandbox.json --iam-account overseer-run-sandbox@felix-technologies.iam.gserviceaccount.com
+This creates a key that is valid for 24 hours. Then, export it as your active credentials:
+
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/overseer-sandbox.json"
+⚠️ Important: This will override your current credentials. Be sure to restore your original credentials after running the tests.
+
+▶️ First-time Setup
+Install dependencies:
+
+poetry install
+✅ Manually Running Integration Tests
+To run a specific test, use the following pattern:
+
+poetry run python test_trigger_order.py
+
+After run I need to save this ID and use it in playwright-framework-test/src/fixtures/test-data.ts in this variables
+paymentReviewUrl: 'https://test.pay.felixpago.com/{orderID}/payment/review?overseer=true',
+  successUrlPattern: 'https://test.pay.felixpago.com/{orderID}/payment/status?status=APPROVED&overseer=true',
+
+  create the neccesary connections and setup to acomplish this task
