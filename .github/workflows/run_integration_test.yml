@@ -76,6 +76,11 @@ jobs:
       - name: Decode and write Overseer GCP credentials
         run: |
           echo "${{ secrets.GCP_SERVICE_KEY }}" | base64 --decode > overseer-sandbox.json
+      
+      - name: Debug GCP key file
+        run: |
+          echo "Validating GCP key file..."
+          cat overseer-sandbox.json | jq '.client_email, .project_id'
 
       # ✅ 8. Ejecutar pruebas completas
       - name: Run Integration Test
