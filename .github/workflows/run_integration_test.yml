@@ -23,39 +23,53 @@ jobs:
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/overseer-sandbox.json
 
     steps:
+      # ✅ 1. Verificar acceso antes del checkout
+      - name: Verify access to Felix-Pago/nightveil
+        run: |
+          git ls-remote https://github.com/Felix-Pago/nightveil.git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      # ✅ 2. Checkout del framework (tu repo actual)
       - name: Checkout E2E Framework
         uses: actions/checkout@v4
 
+      # ✅ 3. Checkout del frontend privado con token PAT
       - name: Checkout Nightveil (Frontend)
         uses: actions/checkout@v4
         with:
           repository: Felix-Pago/nightveil
           ref: ${{ github.event.inputs.branch }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           path: nightveil
 
+      # ✅ 4. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-        
           node-version: 20
 
+      # ✅ 5. Instalar dependencias
       - name: Install dependencies
         run: |
           npm ci
           cd nightveil
           npm ci
 
+      # ✅ 6. Instalar navegadores de Playwright
       - name: Setup Playwright browsers
         run: npm run install-browsers
 
+      # ✅ 7. Decodificar credenciales GCP
       - name: Decode and write Overseer GCP credentials
         run: |
           echo "${{ secrets.GCP_SERVICE_KEY }}" | base64 --decode > overseer-sandbox.json
 
+      # ✅ 8. Ejecutar pruebas completas
       - name: Run Integration Test
         run: npm run integration-test
 
+      # ✅ 9. Subir reporte HTML como artefacto
       - name: Upload Playwright HTML report
         if: always()
         uses: actions/upload-artifact@v4
