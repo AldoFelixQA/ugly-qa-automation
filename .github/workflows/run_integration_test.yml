@@ -23,18 +23,13 @@ jobs:
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/overseer-sandbox.json
 
     steps:
-      # ✅ 1. Verificar acceso antes del checkout
       - name: Verify access to Felix-Pago/nightveil
         run: |
           git ls-remote https://x-access-token:${{ secrets.GH_PAT }}@github.com/Felix-Pago/nightveil.git
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
-      # ✅ 2. Checkout del framework (tu repo actual)
-      - name: Checkout E2E Framework
+      - name: Checkout Framework
         uses: actions/checkout@v4
 
-      # ✅ 3. Checkout del frontend privado con token PAT
       - name: Checkout Nightveil (Frontend)
         uses: actions/checkout@v4
         with:
@@ -43,59 +38,44 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: nightveil
 
-      # ✅ 4. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      # ✅ 5. Instalar sdk googel cloud
 
-      - name: Setup gcloud CLI
+      - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: felix-tech-production
-      # Decode your base64 service account JSON
-      - name: Decode and write Overseer GCP credentials
-        run: echo "${{ secrets.GCP_SERVICE_KEY }}" | base64 --decode > overseer-sandbox.json
+          service_account_key: ${{ secrets.GCP_SERVICE_KEY }}
 
-      # Authenticate now using the decoded JSON
-      - name: Authenticate with Google Artifact Registry
+      - name: Create .npmrc for Artifact Registry
         run: |
-          gcloud auth activate-service-account --key-file=overseer-sandbox.json
-          gcloud auth print-access-token | npm login -u oauth2accesstoken --password-stdin --registry=https://us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/
-          
+          TOKEN=$(gcloud auth print-access-token)
+          cat <<EOF > ~/.npmrc
+@felix:registry=https://us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/
+//us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/:_authToken=$TOKEN
+always-auth=true
+EOF
 
-      # ✅ 5. Instalar dependencias
-      - name: Authenticate with Google Artifact Registry
-        run: |
-          gcloud auth activate-service-account --key-file=overseer-sandbox.json
-          gcloud auth print-access-token | npm login -u oauth2accesstoken --password-stdin --registry=https://us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/
+      - name: Install dependencies (framework)
+        run: npm ci
 
-      - name: Install dependencies
+      - name: Install dependencies (nightveil)
         run: |
-          npm ci
           cd nightveil
           npm ci
 
-      # ✅ 6. Instalar navegadores de Playwright
       - name: Setup Playwright browsers
         run: npm run install-browsers
 
-      # ✅ 7. Decodificar credenciales GCP
       - name: Decode and write Overseer GCP credentials
         run: |
           echo "${{ secrets.GCP_SERVICE_KEY }}" | base64 --decode > overseer-sandbox.json
-      
-      - name: Debug GCP key file
-        run: |
-          echo "Validating GCP key file..."
-          cat overseer-sandbox.json | jq '.client_email, .project_id'
 
-      # ✅ 8. Ejecutar pruebas completas
       - name: Run Integration Test
         run: npm run integration-test
 
-      # ✅ 9. Subir reporte HTML como artefacto
       - name: Upload Playwright HTML report
         if: always()
         uses: actions/upload-artifact@v4
