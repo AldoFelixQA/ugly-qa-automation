@@ -26,7 +26,7 @@ jobs:
       # ✅ 1. Verificar acceso antes del checkout
       - name: Verify access to Felix-Pago/nightveil
         run: |
-          git ls-remote https://github.com/Felix-Pago/nightveil.git
+          git ls-remote https://x-access-token:${{ secrets.GH_PAT }}@github.com/Felix-Pago/nightveil.git
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
