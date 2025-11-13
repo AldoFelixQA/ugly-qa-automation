@@ -29,13 +29,15 @@ jobs:
       - name: Checkout Nightveil (Frontend)
         uses: actions/checkout@v4
         with:
-          repository: felix-technologies/nightveil
+          repository: Felix-Pago/nightveil
           ref: ${{ github.event.inputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           path: nightveil
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
+        
           node-version: 20
 
       - name: Install dependencies
@@ -49,7 +51,7 @@ jobs:
 
       - name: Decode and write Overseer GCP credentials
         run: |
-          echo "${{ secrets.GCP_JSON_BASE64 }}" | base64 --decode > overseer-sandbox.json
+          echo "${{ secrets.GCP_SERVICE_KEY }}" | base64 --decode > overseer-sandbox.json
 
       - name: Run Integration Test
         run: npm run integration-test
