@@ -54,7 +54,16 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: felix-tech-production
-          service_account_key: ${{ secrets.GCP_SERVICE_KEY }}
+      # Decode your base64 service account JSON
+      - name: Decode and write Overseer GCP credentials
+        run: echo "${{ secrets.GCP_SERVICE_KEY }}" | base64 --decode > overseer-sandbox.json
+
+      # Authenticate now using the decoded JSON
+      - name: Authenticate with Google Artifact Registry
+        run: |
+          gcloud auth activate-service-account --key-file=overseer-sandbox.json
+          gcloud auth print-access-token | npm login -u oauth2accesstoken --password-stdin --registry=https://us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/
+          
 
       # ✅ 5. Instalar dependencias
       - name: Authenticate with Google Artifact Registry
