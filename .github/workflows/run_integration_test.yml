@@ -21,10 +21,11 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      # --- INSTALL GCLOUD CLI ---
+      # --- INSTALL GCLOUD ---
       - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
-       
+
+      # --- VERIFY ACCOUNT ---
       - name: Verify GCP Identity
         run: |
           echo "Checking active GCP account..."
@@ -32,8 +33,7 @@ jobs:
           echo "Config value account:"
           gcloud config get-value account
 
-
-      # --- GET TOKEN FOR ARTIFACT REGISTRY ---
+      # --- GET TOKEN ---
       - name: Get Artifact Registry token
         id: token
         run: |
@@ -43,13 +43,13 @@ jobs:
       # --- CREATE .npmrc ---
       - name: Create .npmrc for Artifact Registry
         run: |
-          cat > ~/.npmrc <<EOF
+          cat <<EOF > ~/.npmrc
 @felix:registry=https://us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/
 //us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/:_authToken=${TOKEN}
 always-auth=true
 EOF
 
-      # --- SETUP NODE ---
+      # --- NODE VERSION ---
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -63,6 +63,6 @@ EOF
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      # --- RUN INTEGRATION TESTS ---
+      # --- RUN TESTS ---
       - name: Run Integration Tests
         run: npm run integration-test
