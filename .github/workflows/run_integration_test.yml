@@ -1,20 +1,10 @@
-name: Run Integration Test - (Playwright + Overseer)
+name: Run Integration Test (Playwright + Overseer)
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: "Environment to test"
-        required: true
-        type: choice
-        options: [sandbox, staging, production]
-      branch:
-        description: "Nightveil branch to test"
-        required: true
-        default: "main"
 
 jobs:
-  integration-test:
+  test:
     runs-on: ubuntu-latest
 
     env:
@@ -23,62 +13,49 @@ jobs:
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/overseer-sandbox.json
 
     steps:
-      - name: Verify access to Felix-Pago/nightveil
-        run: |
-          git ls-remote https://x-access-token:${{ secrets.GH_PAT }}@github.com/Felix-Pago/nightveil.git
-
-      - name: Checkout Framework
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Checkout Nightveil (Frontend)
-        uses: actions/checkout@v4
+      # --- GCP AUTH ---
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          repository: Felix-Pago/nightveil
-          ref: ${{ github.event.inputs.branch }}
-          token: ${{ secrets.GH_PAT }}
-          path: nightveil
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup gcloud
+      # --- INSTALL GCLOUD SDK ---
+      - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: felix-tech-production
-          service_account_key: ${{ secrets.GCP_SERVICE_KEY }}
 
-      - name: Create .npmrc for Artifact Registry
+      # --- GET TOKEN FOR ARTIFACT REGISTRY ---
+      - name: Get Artifact Registry token
+        id: token
         run: |
           TOKEN=$(gcloud auth print-access-token)
-          cat << 'EOF' > ~/.npmrc
+          echo "TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      # --- CREATE .npmrc ---
+      - name: Create .npmrc for Artifact Registry
+        run: |
+          cat > ~/.npmrc <<EOF
           @felix:registry=https://us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/
           //us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/:_authToken=${TOKEN}
           always-auth=true
           EOF
 
-      - name: Install dependencies (framework)
-        run: npm ci
-
-      - name: Install dependencies (nightveil)
-        run: |
-          cd nightveil
-          npm ci
-
-      - name: Setup Playwright browsers
-        run: npm run install-browsers
-
-      - name: Decode and write Overseer GCP credentials
-        run: |
-          echo "${{ secrets.GCP_SERVICE_KEY }}" | base64 --decode > overseer-sandbox.json
-
-      - name: Run Integration Test
-        run: npm run integration-test
-
-      - name: Upload Playwright HTML report
-        if: always()
-        uses: actions/upload-artifact@v4
+      # --- NODE VERSION ---
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          name: playwright-report
-          path: playwright-report/
+          node-version: 20
+
+      # --- INSTALL DEPENDENCIES ---
+      - name: Install dependencies
+        run: npm install
+
+      # --- INSTALL PLAYWRIGHT BROWSERS ---
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      # --- RUN INTEGRATION TEST ---
+      - name: Run integration tests
+        run: npm run integration-test
