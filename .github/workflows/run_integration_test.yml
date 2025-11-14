@@ -44,10 +44,11 @@ jobs:
       - name: Create .npmrc for Artifact Registry
         run: |
           cat <<EOF > ~/.npmrc
-@felix:registry=https://us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/
-//us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/:_authToken=${TOKEN}
-always-auth=true
-EOF
+          @felix:registry=https://us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/
+          //us-central1-npm.pkg.dev/felix-tech-production/overseer-sdk-ts/:_authToken=${TOKEN}
+          always-auth=true
+          EOF
+
 
       # --- NODE VERSION ---
       - name: Setup Node.js
